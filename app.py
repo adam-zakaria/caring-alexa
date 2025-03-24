@@ -1,1 +1,199 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import openai
+import json
+from datetime import datetime
+import pymongo
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Initialize Flask app
+app = Flask(__name__)
+CORS(app)
+
+# Configure OpenAI
+openai.api_key = os.environ.get("OPENAI_API_KEY")
+
+# Configure MongoDB
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
+mongo_client = pymongo.MongoClient(MONGO_URI)
+db = mongo_client["alexa_az"]  # Database name
+
+# Load prompt
+current_dir = os.path.dirname(os.path.abspath(__file__))
+prompt_path = os.path.join(current_dir, "prompt.txt")
+
+if os.path.exists(prompt_path):
+    with open(prompt_path, "r") as f:
+        conversation_system_prompt = f.read()
+else:
+    # Default prompt if file doesn't exist
+    conversation_system_prompt = """
+    # [System Definition]
+    You are a friendly and empathetic chatbot designed to support caregivers.
+    Your goal is to help caregivers manage their stress and provide encouragement.
+    Be empathetic, thoughtful, and avoid medical diagnoses or advice.
+    Listen carefully and respond naturally as if you're talking to the user over the phone.
+    """
+
+# OpenAI functions
+def gpt_inference(messages, stop=None, model="gpt-4o", **kwargs):
+    """Call the OpenAI API with the provided messages."""
+    response = openai.chat.completions.create(
+        model=model,
+        messages=messages,
+        max_tokens=512,
+        stop=stop,
+        **kwargs
+    )
+    return response.choices[0].message.content
+
+def conversation(messages):
+    """Process a conversation with the system prompt."""
+    return gpt_inference(
+        [{"role": "system", "content": conversation_system_prompt}, *messages],
+    )
+
+@app.route("/direct_conversation", methods=["POST"])
+def direct_conversation():
+    """
+    A simplified endpoint that calls the LLM directly without user ID or database interaction.
+    Just takes a message and returns the LLM response using the custom prompt.
+    """
+    data = request.json
+    message = data.get("message", "")
+    
+    # Create a simple conversation structure with just this message
+    conversation_logs = [
+        {"role": "user", "content": message}
+    ]
+    
+    # Call the OpenAI function directly
+    assistant_message = conversation(conversation_logs)
+    
+    # Process the response
+    try:
+        chain_of_thoughts, assistant_message = assistant_message.split(
+            "==============", 1
+        )
+        assistant_message = assistant_message.strip()
+    except ValueError:
+        chain_of_thoughts = """physical: not discussed
+stress: not discussed
+mood: not discussed
+communication: not discussed
+"""
+    
+    # Return just the response without database operations
+    return jsonify({
+        "role": "assistant",
+        "content": assistant_message,
+        "chain_of_thoughts": chain_of_thoughts
+    })
+
+@app.route("/mongo_conversation", methods=["POST"])
+def mongo_conversation():
+    """
+    An endpoint that maintains conversation history in MongoDB.
+    Uses a user ID from the request or a default, creating the user if they don't exist.
+    """
+    data = request.json
+    message = data.get("message", "")
+    user_id = data.get("user_id", "test_user_mongo_123")  # Default user ID
+    
+    # Initialize MongoDB collection for conversations
+    conversations_collection = db['conversations']
+    
+    # Check if user exists, create if not
+    user = conversations_collection.find_one({"user_id": user_id})
+    if not user:
+        # Initialize new user with empty conversation history
+        conversations_collection.insert_one({
+            "user_id": user_id,
+            "conversation_history": []
+        })
+        # Fetch the newly created user
+        user = conversations_collection.find_one({"user_id": user_id})
+    
+    # Get conversation history
+    conversation_history = user.get("conversation_history", [])
+    
+    # Add the new user message to history
+    conversation_history.append({
+        "role": "user",
+        "content": message,
+        "timestamp": datetime.utcnow()
+    })
+    
+    # Format for OpenAI API
+    conversation_logs = [
+        {"role": log["role"], "content": log["content"]}
+        for log in conversation_history
+    ]
+    
+    # Call the OpenAI function with full history
+    assistant_message = conversation(conversation_logs)
+    
+    # Process the response
+    try:
+        chain_of_thoughts, assistant_message = assistant_message.split(
+            "==============", 1
+        )
+        assistant_message = assistant_message.strip()
+    except ValueError:
+        chain_of_thoughts = """physical: not discussed
+stress: not discussed
+mood: not discussed
+communication: not discussed
+"""
+    
+    # Add assistant response to history
+    conversation_history.append({
+        "role": "assistant",
+        "content": assistant_message,
+        "chain_of_thoughts": chain_of_thoughts,
+        "timestamp": datetime.utcnow()
+    })
+    
+    # Update MongoDB with new conversation history
+    conversations_collection.update_one(
+        {"user_id": user_id},
+        {"$set": {"conversation_history": conversation_history}}
+    )
+    
+    # Return the assistant's response
+    return jsonify({
+        "role": "assistant",
+        "content": assistant_message,
+        "chain_of_thoughts": chain_of_thoughts,
+        "user_id": user_id,
+        "conversation_length": len(conversation_history)
+    })
+
+@app.route("/health", methods=["GET"])
+def health_check():
+    """Simple health check endpoint."""
+    return jsonify({"status": "ok"})
+
+if __name__ == "__main__":
+    # Add better error handling
+    try:
+        print(f"Starting server on port {os.environ.get('PORT', 5002)}")
+        print(f"OpenAI API key configured: {'Yes' if openai.api_key and len(openai.api_key) > 10 else 'No'}")
+        print(f"MongoDB URI: {MONGO_URI}")
+        
+        # Test MongoDB connection
+        try:
+            mongo_client.server_info()
+            print("MongoDB connection successful")
+        except Exception as e:
+            print(f"MongoDB connection error: {e}")
+        
+        port = int(os.environ.get("PORT", 5002))
+        app.run(host="0.0.0.0", port=port, debug=True)
+    except Exception as e:
+        print(f"Error starting server: {e}") 
