@@ -95,15 +95,24 @@ communication: not discussed
         "chain_of_thoughts": chain_of_thoughts
     })
 
-@app.route("/mongo_conversation", methods=["POST"])
-def mongo_conversation():
+# Temporarily '/mongo_conversation' endpoint
+"""
+@current_app.route("/alexa_user/<alexa_user_id>/conversation", methods=["POST"])
+@api_key_required
+def create_conversation_log(alexa_user_id):
+"""
+@app.route("/alexa_user/<alexa_user_id>/conversation", methods=["POST"])
+#@app.route("/conversation", methods=["POST"])
+def mongo_conversation(alexa_user_id):
     """
     An endpoint that maintains conversation history in MongoDB.
     Uses a user ID from the request or a default, creating the user if they don't exist.
     """
-    data = request.json
-    message = data.get("message", "")
-    user_id = data.get("user_id", "test_user_mongo_123")  # Default user ID
+    message = request.get_json()["content"]
+    user_id = alexa_user_id
+    #data = request.json
+    #message = data.get("message", "")
+    #user_id = data.get("user_id", "test_user_mongo_123")  # Default user ID
     
     # Initialize MongoDB collection for conversations
     conversations_collection = db['conversations']
