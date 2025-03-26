@@ -1,6 +1,11 @@
 # Current
 Does flask need to run here...Likely just the button press, which invokes the skill, which talks to the ec2 server (for mongo access). But for button, a device must be available.
 
+# Activate virtualenv (To avoid package collisions with other python projects)
+python -m venv venv
+source venv/bin/activate
+
+
 # Setup
 Ensure mongo is running
 populate .env 

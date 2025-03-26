@@ -16,7 +16,8 @@ app = Flask(__name__)
 CORS(app)
 
 # Configure OpenAI
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+client = openai.OpenAI(api_key=openai_api_key)
 
 # Configure MongoDB
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
@@ -190,17 +191,21 @@ def get_last_message(alexa_user_id):
     If no messages exist, creates a welcome message.
     If the last message was CONVERSATION_END, starts a new conversation.
     """
+    print(f"get_last_message called for user: {alexa_user_id}")
+    
     # Initialize MongoDB collection for conversations
     conversations_collection = db['conversations']
     
     # Check if user exists, create if not
     user = conversations_collection.find_one({"user_id": alexa_user_id})
     if not user or not user.get("conversation_history"):
+        print(f"Path: User doesn't exist or has no conversation history")
         # Create initial greeting message
         greeting_msg = "Hello, thanks for checking in. How are you managing your caregiving and taking care of yourself?"
         
         # Initialize new user with welcome message
         if not user:
+            print(f"Sub-path: User doesn't exist at all - creating new user")
             conversations_collection.insert_one({
                 "user_id": alexa_user_id,
                 "conversation_history": [{
@@ -211,6 +216,7 @@ def get_last_message(alexa_user_id):
                 }]
             })
         else:
+            print(f"Sub-path: User exists but has no conversation history")
             # User exists but has no messages
             conversations_collection.update_one(
                 {"user_id": alexa_user_id},
@@ -222,6 +228,7 @@ def get_last_message(alexa_user_id):
                 }]}}
             )
         
+        print(f"Returning greeting message")
         # Return the greeting message
         return jsonify({
             "message": "success", 
@@ -234,11 +241,14 @@ def get_last_message(alexa_user_id):
     
     # Get conversation history
     conversation_history = user.get("conversation_history", [])
+    print(f"User has {len(conversation_history)} messages in history")
     
     # Filter for assistant messages
     assistant_messages = [msg for msg in conversation_history if msg.get("role") == "assistant"]
+    print(f"Found {len(assistant_messages)} assistant messages")
     
     if not assistant_messages:
+        print(f"Path: User exists but has no assistant messages")
         # Shouldn't happen normally, but handle just in case
         greeting_msg = "Hello, thanks for checking in. How are you managing your caregiving and taking care of yourself?"
         new_message = {
@@ -252,6 +262,7 @@ def get_last_message(alexa_user_id):
             {"user_id": alexa_user_id},
             {"$set": {"conversation_history": conversation_history}}
         )
+        print(f"Added greeting message and returning it")
         return jsonify({
             "message": "success", 
             "last_message": {
@@ -263,7 +274,10 @@ def get_last_message(alexa_user_id):
     
     # Check if last message was a conversation end
     last_assistant_message = assistant_messages[-1]
+    print(f"Last assistant message content starts with: {last_assistant_message.get('content', '')[:50]}...")
+    
     if "CONVERSATION_END" in last_assistant_message.get("content", ""):
+        print(f"Path: Last message was CONVERSATION_END")
         # Start a new conversation
         greeting_msg = "Hello, thanks for checking in. How are you managing your caregiving and taking care of yourself?"
         new_message = {
@@ -277,6 +291,7 @@ def get_last_message(alexa_user_id):
             {"user_id": alexa_user_id},
             {"$set": {"conversation_history": [new_message]}}
         )
+        print(f"Cleared history, added greeting message, and returning it")
         return jsonify({
             "message": "success", 
             "last_message": {
@@ -287,6 +302,7 @@ def get_last_message(alexa_user_id):
         })
     
     # Return the last assistant message
+    print(f"Path: Normal return of last assistant message")
     return jsonify({
         "message": "success",
         "last_message": last_assistant_message
