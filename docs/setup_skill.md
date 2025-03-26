@@ -38,10 +38,17 @@ Save
 
 Now go back to the skill you've created. Click on the skill and click on the Build tab (top nav) then the Endpoint tab (left nav). Enter the AWS Lambda ARN (which is listed on the main page of the specific Lambda you want to link)
 
+# Enable for Testing
+Alexa developer console -> <Your Skill> -> Test (top nav) -> Enable skill testing for Development (dropdown)
+
+Again, could not get this to work from cli
+
+# Set up intents
+Long (look at claude chat history) (Recover Alexa Skill overview)(neu/chatty-alexa.code-workspace)
+
+# Simulate alexa
 
 
-
-# 
 
 
 
