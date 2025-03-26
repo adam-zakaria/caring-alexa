@@ -183,6 +183,115 @@ communication: not discussed
         "conversation_length": len(conversation_history)
     })
 
+@app.route("/alexa_user/<alexa_user_id>/last_message", methods=["GET"])
+def get_last_message(alexa_user_id):
+    """
+    Retrieves the last assistant message for a given user.
+    If no messages exist, creates a welcome message.
+    If the last message was CONVERSATION_END, starts a new conversation.
+    """
+    # Initialize MongoDB collection for conversations
+    conversations_collection = db['conversations']
+    
+    # Check if user exists, create if not
+    user = conversations_collection.find_one({"user_id": alexa_user_id})
+    if not user or not user.get("conversation_history"):
+        # Create initial greeting message
+        greeting_msg = "Hello, thanks for checking in. How are you managing your caregiving and taking care of yourself?"
+        
+        # Initialize new user with welcome message
+        if not user:
+            conversations_collection.insert_one({
+                "user_id": alexa_user_id,
+                "conversation_history": [{
+                    "role": "assistant",
+                    "content": greeting_msg,
+                    "chain_of_thoughts": "",
+                    "timestamp": datetime.utcnow()
+                }]
+            })
+        else:
+            # User exists but has no messages
+            conversations_collection.update_one(
+                {"user_id": alexa_user_id},
+                {"$set": {"conversation_history": [{
+                    "role": "assistant",
+                    "content": greeting_msg,
+                    "chain_of_thoughts": "",
+                    "timestamp": datetime.utcnow()
+                }]}}
+            )
+        
+        # Return the greeting message
+        return jsonify({
+            "message": "success", 
+            "last_message": {
+                "role": "assistant",
+                "content": greeting_msg,
+                "chain_of_thoughts": ""
+            }
+        })
+    
+    # Get conversation history
+    conversation_history = user.get("conversation_history", [])
+    
+    # Filter for assistant messages
+    assistant_messages = [msg for msg in conversation_history if msg.get("role") == "assistant"]
+    
+    if not assistant_messages:
+        # Shouldn't happen normally, but handle just in case
+        greeting_msg = "Hello, thanks for checking in. How are you managing your caregiving and taking care of yourself?"
+        new_message = {
+            "role": "assistant",
+            "content": greeting_msg,
+            "chain_of_thoughts": "",
+            "timestamp": datetime.utcnow()
+        }
+        conversation_history.append(new_message)
+        conversations_collection.update_one(
+            {"user_id": alexa_user_id},
+            {"$set": {"conversation_history": conversation_history}}
+        )
+        return jsonify({
+            "message": "success", 
+            "last_message": {
+                "role": "assistant",
+                "content": greeting_msg,
+                "chain_of_thoughts": ""
+            }
+        })
+    
+    # Check if last message was a conversation end
+    last_assistant_message = assistant_messages[-1]
+    if "CONVERSATION_END" in last_assistant_message.get("content", ""):
+        # Start a new conversation
+        greeting_msg = "Hello, thanks for checking in. How are you managing your caregiving and taking care of yourself?"
+        new_message = {
+            "role": "assistant",
+            "content": greeting_msg,
+            "chain_of_thoughts": "",
+            "timestamp": datetime.utcnow()
+        }
+        # Clear conversation history and add greeting
+        conversations_collection.update_one(
+            {"user_id": alexa_user_id},
+            {"$set": {"conversation_history": [new_message]}}
+        )
+        return jsonify({
+            "message": "success", 
+            "last_message": {
+                "role": "assistant",
+                "content": greeting_msg,
+                "chain_of_thoughts": ""
+            }
+        })
+    
+    # Return the last assistant message
+    return jsonify({
+        "message": "success",
+        "last_message": last_assistant_message
+    })
+
 @app.route("/health", methods=["GET"])
 def health_check():
     """Simple health check endpoint."""
