@@ -1,4 +1,4 @@
 venv
 .env
 __pycache__/
-skill_robin
+skill_robin/.ask/

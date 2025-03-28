@@ -1,0 +1,28 @@
+{
+  "askcliResourcesVersion": "2020-03-31",
+  "profiles": {
+    "default": {
+      "skillMetadata": {
+        "src": "./skill-package"
+      },
+      "code": {
+        "default": {
+          "src": "./lambda"
+        }
+      },
+      "skillInfrastructure": {
+        "type": "@ask-cli/lambda-deployer",
+        "userConfig": {
+          "runtime": "python3.9",
+          "handler": "lambda_function.lambda_handler",
+          "awsRegion": "us-east-1"
+        }
+      }
+    }
+  },
+  "skills": {
+    "default": {
+      "skillId": "amzn1.ask.skill.baf61538-539e-4d87-8783-b83916fc2119"
+    }
+  }
+}

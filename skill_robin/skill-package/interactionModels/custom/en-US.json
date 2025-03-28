@@ -1,0 +1,112 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "slots": [
+            {
+              "name": "text",
+              "type": "text"
+            }
+          ],
+          "name": "ConversationIntent",
+          "samples": [
+            "{text}"
+          ]
+        },
+        {
+          "slots": [
+            {
+              "multipleValues": {
+                "enabled": true
+              },
+              "name": "number",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "name": "RecordIDIntent",
+          "samples": [
+            "record my participant number as {number}",
+            "record me as participant {number}"
+          ]
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "slots": [],
+          "name": "AlexaIDIntent",
+          "samples": [
+            "Please note my alexa id"
+          ]
+        }
+      ],
+      "types": [
+        {
+          "values": [
+            {
+              "name": {
+                "value": "I\u0027m feeling good"
+              }
+            },
+            {
+              "name": {
+                "value": "1231283"
+              }
+            },
+            {
+              "name": {
+                "value": "one"
+              }
+            },
+            {
+              "name": {
+                "value": "I\u0027m feeling some pain"
+              }
+            },
+            {
+              "name": {
+                "value": "great"
+              }
+            },
+            {
+              "name": {
+                "value": "no"
+              }
+            },
+            {
+              "name": {
+                "value": "yes"
+              }
+            },
+            {
+              "name": {
+                "value": "hello"
+              }
+            },
+            {
+              "name": {
+                "value": "haha"
+              }
+            }
+          ],
+          "name": "text"
+        }
+      ],
+      "invocationName": "recover demo bot"
+    }
+  }
+}
