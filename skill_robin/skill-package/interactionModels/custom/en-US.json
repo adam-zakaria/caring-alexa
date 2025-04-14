@@ -52,6 +52,22 @@
           "samples": [
             "Please note my alexa id"
           ]
+        },
+        {
+          "name": "MorningProactiveReminderIntent",
+          "samples": [
+            "morning check in",
+            "morning reminder",
+            "morning feeling check"
+          ]
+        },
+        {
+          "name": "AfternoonProactiveReminderIntent",
+          "samples": [
+            "afternoon check in",
+            "afternoon reminder",
+            "afternoon feeling check"
+          ]
         }
       ],
       "types": [

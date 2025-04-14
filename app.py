@@ -7,6 +7,7 @@ import pymongo
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from rag_manager import RAGManager
 
 # Load environment variables from .env file
 load_dotenv()
@@ -14,6 +15,9 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
+
+# Initialize RAG Manager
+rag_manager = RAGManager()
 
 # Configure OpenAI
 openai_api_key = os.environ.get("OPENAI_API_KEY")
@@ -53,10 +57,22 @@ def gpt_inference(messages, stop=None, model="gpt-4o", **kwargs):
     )
     return response.choices[0].message.content
 
-def conversation(messages):
-    """Process a conversation with the system prompt."""
+def conversation(messages, conversation_history=None):
+    """Process a conversation with the system prompt and RAG context."""
+    # Get the current message (last user message)
+    current_message = messages[-1]["content"] if messages else ""
+    
+    # Get relevant context from RAG if conversation history is provided
+    context = ""
+    if conversation_history:
+        context = rag_manager.get_context_for_prompt(current_message, conversation_history)
+    
+    # Create enhanced system prompt with context
+    enhanced_system_prompt = f"{conversation_system_prompt}\n\nRelevant previous conversations:\n{context}"
+    
+    # Call the OpenAI function with enhanced prompt
     return gpt_inference(
-        [{"role": "system", "content": conversation_system_prompt}, *messages],
+        [{"role": "system", "content": enhanced_system_prompt}, *messages],
     )
 
 @app.route("/direct_conversation", methods=["POST"])
@@ -96,24 +112,13 @@ communication: not discussed
         "chain_of_thoughts": chain_of_thoughts
     })
 
-# Temporarily '/mongo_conversation' endpoint
-"""
-@current_app.route("/alexa_user/<alexa_user_id>/conversation", methods=["POST"])
-@api_key_required
-def create_conversation_log(alexa_user_id):
-"""
 @app.route("/alexa_user/<alexa_user_id>/conversation", methods=["POST"])
-#@app.route("/conversation", methods=["POST"])
 def mongo_conversation(alexa_user_id):
     """
-    An endpoint that maintains conversation history in MongoDB.
-    Uses a user ID from the request or a default, creating the user if they don't exist.
+    An endpoint that maintains conversation history in MongoDB with RAG support.
     """
     message = request.get_json()["content"]
     user_id = alexa_user_id
-    #data = request.json
-    #message = data.get("message", "")
-    #user_id = data.get("user_id", "test_user_mongo_123")  # Default user ID
     
     # Initialize MongoDB collection for conversations
     conversations_collection = db['conversations']
@@ -121,12 +126,10 @@ def mongo_conversation(alexa_user_id):
     # Check if user exists, create if not
     user = conversations_collection.find_one({"user_id": user_id})
     if not user:
-        # Initialize new user with empty conversation history
         conversations_collection.insert_one({
             "user_id": user_id,
             "conversation_history": []
         })
-        # Fetch the newly created user
         user = conversations_collection.find_one({"user_id": user_id})
     
     # Get conversation history
@@ -145,8 +148,8 @@ def mongo_conversation(alexa_user_id):
         for log in conversation_history
     ]
     
-    # Call the OpenAI function with full history
-    assistant_message = conversation(conversation_logs)
+    # Call the OpenAI function with full history and RAG context
+    assistant_message = conversation(conversation_logs, conversation_history)
     
     # Process the response
     try:

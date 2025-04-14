@@ -207,6 +207,88 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
         return handler_input.response_builder.response
 
 
+class MorningProactiveReminderHandler(AbstractRequestHandler):
+    """Handler for morning proactive reminders."""
+
+    def can_handle(self, handler_input):
+        # type: (HandlerInput) -> bool
+        return ask_utils.is_intent_name("MorningProactiveReminderIntent")(handler_input)
+
+    def handle(self, handler_input):
+        # type: (HandlerInput) -> Response
+        logger.info("MorningProactiveReminderHandler")
+        logger.info(handler_input.request_envelope)
+        user_id = get_customer_email(handler_input)
+        
+        message = "Good morning! How are you feeling today?"
+        resp = conversation(user_id, message)
+        
+        if resp is None:
+            speak_output = "Sorry, I'm having trouble connecting right now. Please try again later."
+            return handler_input.response_builder.speak(speak_output).ask(speak_output).response
+            
+        if resp.status_code != 200:
+            logger.error(resp.text)
+            speak_output = "Sorry, I'm having trouble processing your request. Let's try again."
+            return handler_input.response_builder.speak(speak_output).ask(speak_output).response
+        
+        response_json = resp.json()
+        speak_output = response_json.get("content", "Sorry, I didn't understand that.")
+        
+        if "CONVERSATION_END" in speak_output:
+            conversationEnded(user_id)
+            return (
+                handler_input.response_builder.speak(
+                    speak_output.replace("CONVERSATION_END", "")
+                )
+                .set_should_end_session(True)
+                .response
+            )
+        
+        return handler_input.response_builder.speak(speak_output).ask(speak_output).response
+
+
+class AfternoonProactiveReminderHandler(AbstractRequestHandler):
+    """Handler for afternoon proactive reminders."""
+
+    def can_handle(self, handler_input):
+        # type: (HandlerInput) -> bool
+        return ask_utils.is_intent_name("AfternoonProactiveReminderIntent")(handler_input)
+
+    def handle(self, handler_input):
+        # type: (HandlerInput) -> Response
+        logger.info("AfternoonProactiveReminderHandler")
+        logger.info(handler_input.request_envelope)
+        user_id = get_customer_email(handler_input)
+        
+        message = "Good afternoon! How are you feeling now?"
+        resp = conversation(user_id, message)
+        
+        if resp is None:
+            speak_output = "Sorry, I'm having trouble connecting right now. Please try again later."
+            return handler_input.response_builder.speak(speak_output).ask(speak_output).response
+            
+        if resp.status_code != 200:
+            logger.error(resp.text)
+            speak_output = "Sorry, I'm having trouble processing your request. Let's try again."
+            return handler_input.response_builder.speak(speak_output).ask(speak_output).response
+        
+        response_json = resp.json()
+        speak_output = response_json.get("content", "Sorry, I didn't understand that.")
+        
+        if "CONVERSATION_END" in speak_output:
+            conversationEnded(user_id)
+            return (
+                handler_input.response_builder.speak(
+                    speak_output.replace("CONVERSATION_END", "")
+                )
+                .set_should_end_session(True)
+                .response
+            )
+        
+        return handler_input.response_builder.speak(speak_output).ask(speak_output).response
+
+
 class ConversationHandler(AbstractRequestHandler):
     """Handler for all conversation intents."""
 
@@ -322,6 +404,8 @@ sb = StandardSkillBuilder()
 
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
+sb.add_request_handler(MorningProactiveReminderHandler())
+sb.add_request_handler(AfternoonProactiveReminderHandler())
 sb.add_request_handler(ConversationHandler())
 sb.add_request_handler(SessionEndedRequestHandler())
 
