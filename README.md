@@ -57,4 +57,4 @@ ask dialog
 
 # More notes
 * The skill takes a few minutes to build when pushed from cli.
-* ask deploy should enable a skill (i.e. don't need to enable skill for testing in dashboard)
+* `cd skill_robin; ask deploy` should enable a skill (i.e. don't need to enable skill for testing in dashboard)
