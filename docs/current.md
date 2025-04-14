@@ -1,0 +1,1 @@
+The current plan is to add intents to trigger the individual checkins.
