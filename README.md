@@ -6,6 +6,13 @@ source venv/bin/activate
 Ensure mongo is running
 populate .env 
 
+## ASK
+These instructions are not complete and need to be retested, but likely needed are aws creds in .aws, and then ask-cli must be installed with 
+`npm install -g ask-cli`
+and ask initialized with:
+`ask init`
+Contact Adam for his folders if need be. They are on his localhost.
+
 ## Install MongoDB (Ubuntu)
 ### Import MongoDB public key
 curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \

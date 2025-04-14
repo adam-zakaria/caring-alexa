@@ -90,6 +90,7 @@ def conversationEnded(alexa_user_id: str):
         logger.info(resp.json())
         return resp.status_code == 200
     except Exception as e:
+        print(f"API error in conversationEnded: {str(e)}")
         logger.error(f"API error in conversationEnded: {str(e)}")
         return False
 
