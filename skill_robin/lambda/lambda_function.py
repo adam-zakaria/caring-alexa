@@ -5,7 +5,7 @@
 # session persistence, api calls, and more.
 # This sample is built using the handler classes approach in skill builder.
 import logging
-
+from datetime import datetime
 import ask_sdk_core.utils as ask_utils
 import config
 import requests
@@ -220,8 +220,44 @@ class MorningProactiveReminderHandler(AbstractRequestHandler):
         logger.info("MorningProactiveReminderHandler")
         logger.info(handler_input.request_envelope)
         user_id = get_customer_email(handler_input)
-        
-        message = "Good morning! How are you feeling today?"
+
+        # Do additional message logic
+        # 1) Local context 
+        # Get time, date, weather 
+        location = "Atlanta, GA"
+        time = datetime.now().strftime("%H:%M")
+        # date = datetime.now().strftime("%Y-%m-%d")
+        weather = "Sunny" # TODO: Replace with actual openweathermap api call
+        USERNAME = "John"
+        message = f"Good morning, {USERNAME} I’m Robin, your AI-Caring assistant! It’s {time} and {weather} here in {location}.\n"
+
+        # 2) WW Schedule
+        # Mock schedule
+        schedule = [
+            {
+                "activity": "Take medication",
+                "date_time": "2025-04-15 10:00 AM"
+            },
+            {
+                "activity": "Cooking class",
+                "date_time": "2025-04-15 10:00 AM"
+            },
+            {
+                "activity": "Yoga class",
+                "date_time": "2025-04-15 10:00 AM"
+            }
+        ]
+        # Sort schedule by date_time
+        schedule.sort(key=lambda x: x["date_time"])
+        # Get first 3 items on schedule
+        first_three_items = schedule[:3]
+        # Format first 3 items on schedule
+        first_three_items_str = "\n".join([f"{item['activity']} at {item['date_time']}" for item in first_three_items])
+        message += f"Today on your schedule you’ve got {first_three_items_str} up next"
+
+        # 3) Can help with
+        message += "For your reference, keeping up with your schedule and just being here for you to chat."
+
         resp = conversation(user_id, message)
         
         if resp is None:
