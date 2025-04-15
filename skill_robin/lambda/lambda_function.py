@@ -19,6 +19,7 @@ from ask_sdk_model.ui.ask_for_permissions_consent_card import (
 from ask_sdk_core.exceptions import SerializationException
 from ask_sdk_core.handler_input import HandlerInput
 from ask_sdk.standard import StandardSkillBuilder
+import json
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -221,43 +222,46 @@ class MorningProactiveReminderHandler(AbstractRequestHandler):
         logger.info(handler_input.request_envelope)
         user_id = get_customer_email(handler_input)
 
-        # Do additional message logic
-        # 1) Local context 
-        # Get time, date, weather 
+        # Get time, date, weather and location
         location = "Atlanta, GA"
-        time = datetime.now().strftime("%H:%M")
-        # date = datetime.now().strftime("%Y-%m-%d")
-        weather = "Sunny" # TODO: Replace with actual openweathermap api call
-        USERNAME = "John"
-        message = f"Good morning, {USERNAME} I’m Robin, your AI-Caring assistant! It’s {time} and {weather} here in {location}.\n"
+        current_time = datetime.now().strftime("%I:%M %p")
+        current_date = datetime.now().strftime("%A, %B %d")
+        weather = "Sunny"  # TODO: Replace with actual openweathermap api call
+        username = "John"  # TODO: Replace with actual username from database
 
-        # 2) WW Schedule
         # Mock schedule
         schedule = [
             {
                 "activity": "Take medication",
-                "date_time": "2025-04-15 10:00 AM"
+                "date_time": "8:00 AM"
             },
             {
                 "activity": "Cooking class",
-                "date_time": "2025-04-15 10:00 AM"
+                "date_time": "10:00 AM"
             },
             {
                 "activity": "Yoga class",
-                "date_time": "2025-04-15 10:00 AM"
+                "date_time": "2:00 PM"
             }
         ]
-        # Sort schedule by date_time
-        schedule.sort(key=lambda x: x["date_time"])
-        # Get first 3 items on schedule
-        first_three_items = schedule[:3]
-        # Format first 3 items on schedule
-        first_three_items_str = "\n".join([f"{item['activity']} at {item['date_time']}" for item in first_three_items])
-        message += f"Today on your schedule you’ve got {first_three_items_str} up next"
 
-        # 3) Can help with
-        message += "For your reference, keeping up with your schedule and just being here for you to chat."
+        # Create JSON data structure for the LLM
+        morning_data = {
+            "type": "morning_checkin",
+            "context": {
+                "username": username,
+                "time": current_time,
+                "date": current_date,
+                "weather": weather,
+                "location": location
+            },
+            "schedule": schedule
+        }
 
+        # Convert to JSON string
+        message = json.dumps(morning_data)
+        
+        # Send to LLM
         resp = conversation(user_id, message)
         
         if resp is None:
@@ -298,7 +302,52 @@ class AfternoonProactiveReminderHandler(AbstractRequestHandler):
         logger.info(handler_input.request_envelope)
         user_id = get_customer_email(handler_input)
         
-        message = "Good afternoon! How are you feeling now?"
+        # Get time and username
+        current_time = datetime.now().strftime("%I:%M %p")
+        username = "John"  # TODO: Replace with actual username from database
+        
+        # Mock schedule - remaining events for today
+        schedule = [
+            {
+                "activity": "Afternoon tea",
+                "date_time": "3:30 PM"
+            },
+            {
+                "activity": "Call with family",
+                "date_time": "5:00 PM"
+            },
+            {
+                "activity": "Evening medication",
+                "date_time": "8:00 PM"
+            }
+        ]
+        
+        # Mock notifications
+        notifications = [
+            {
+                "type": "reminder",
+                "message": "Don't forget to drink water throughout the day"
+            },
+            {
+                "type": "schedule_change",
+                "message": "Your doctor's appointment for tomorrow has been rescheduled to 10:00 AM"
+            }
+        ]
+        
+        # Create JSON data structure for the LLM
+        afternoon_data = {
+            "type": "afternoon_checkin",
+            "context": {
+                "username": username,
+                "time": current_time
+            },
+            "schedule": schedule,
+            "notifications": notifications
+        }
+        
+        # Convert to JSON string
+        message = json.dumps(afternoon_data)
+        
         resp = conversation(user_id, message)
         
         if resp is None:
