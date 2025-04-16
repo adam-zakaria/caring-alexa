@@ -54,52 +54,8 @@ def gpt_inference(messages, stop=None, model="gpt-4o", **kwargs):
     )
     return response.choices[0].message.content
 
-def conversation(messages):
-    """Process a conversation with the system prompt and conversation history."""
-    # Call the OpenAI function with system prompt and messages
-    return gpt_inference(
-        [{"role": "system", "content": conversation_system_prompt}, *messages],
-    )
-
-@app.route("/direct_conversation", methods=["POST"])
-def direct_conversation():
-    """
-    A simplified endpoint that calls the LLM directly without user ID or database interaction.
-    Just takes a message and returns the LLM response using the custom prompt.
-    """
-    data = request.json
-    message = data.get("message", "")
-    
-    # Create a simple conversation structure with just this message
-    conversation_logs = [
-        {"role": "user", "content": message}
-    ]
-    
-    # Call the OpenAI function directly
-    assistant_message = conversation(conversation_logs)
-    
-    # Process the response
-    try:
-        chain_of_thoughts, assistant_message = assistant_message.split(
-            "==============", 1
-        )
-        assistant_message = assistant_message.strip()
-    except ValueError:
-        chain_of_thoughts = """physical: not discussed
-stress: not discussed
-mood: not discussed
-communication: not discussed
-"""
-    
-    # Return just the response without database operations
-    return jsonify({
-        "role": "assistant",
-        "content": assistant_message,
-        "chain_of_thoughts": chain_of_thoughts
-    })
-
 @app.route("/alexa_user/<alexa_user_id>/conversation", methods=["POST"])
-def mongo_conversation(alexa_user_id):
+def conversation(alexa_user_id):
     """
     An endpoint that maintains conversation history in MongoDB.
     """
@@ -135,7 +91,9 @@ def mongo_conversation(alexa_user_id):
     ]
     
     # Call the OpenAI function with full history
-    assistant_message = conversation(conversation_logs)
+    assistant_message = gpt_inference(
+        [{"role": "system", "content": conversation_system_prompt}, *conversation_logs],
+    )
     
     # Process the response
     try:
