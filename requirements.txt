@@ -4,6 +4,6 @@ pymongo
 python-dotenv
 requests
 httpx==0.27.2 # is required because of some weird openai bug with proxies
-openai==1.55.3
+# openai==1.55.3
 faiss-cpu
 numpy

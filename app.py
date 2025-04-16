@@ -78,41 +78,53 @@ def conversation(alexa_user_id):
     conversation_history = user.get("conversation_history", [])
     
     # Add the new user message to history
-    conversation_history.append({
-        "role": "user",
-        "content": message,
-        "timestamp": datetime.utcnow()
-    })
+    #conversation_history.append({
+    #    "role": "user",
+    #    "content": message,
+    #    "timestamp": datetime.utcnow()
+    #})
+    conversation_history += " " + message
     
+    breakpoint()
     # Format for OpenAI API
-    conversation_logs = [
-        {"role": log["role"], "content": log["content"]}
-        for log in conversation_history
-    ]
+    # conversation_logs = [
+    #     {"role": log["role"], "content": log["content"]}
+    #     for log in conversation_history
+    # ]
+    # Okay, instead of multi concat, to a dict value, just multi concat to a string
+    # conversation_history_string = con
     
-    # Call the OpenAI function with full history
-    assistant_message = gpt_inference(
-        [{"role": "system", "content": conversation_system_prompt}, *conversation_logs],
-    )
-    
-    # Process the response
-    try:
-        chain_of_thoughts, assistant_message = assistant_message.split(
-            "==============", 1
-        )
-        assistant_message = assistant_message.strip()
-    except ValueError:
-        chain_of_thoughts = """physical: not discussed
-stress: not discussed
-mood: not discussed
-communication: not discussed
-"""
+    ## Call the OpenAI function with full history
+    #assistant_message = gpt_inference(
+    #    [{"role": "system", "content": conversation_system_prompt}, *conversation_logs],
+    #)
+
+    # print('--------------------------------')
+    # print(conversation_logs)
+    # dump json pretty print
+    # print(json.dumps(conversation_logs, indent=2), flush=True)
+    # print('--------------------------------')
+
+    # The completions API is an older version, but still supported - let's upgrade it soon!
+    # https://github.com/openai/openai-python
+    # "The previous standard (supported indefinitely) for generating text is the Chat Completions API."
+    # assistant_message = openai.chat.completions.create(
+    #     model="gpt-4o",
+    #     messages=[{"role": "system", "content": conversation_system_prompt}, *conversation_logs],
+    #     max_tokens=512,
+    #     stop=None,
+    # ).choices[0].message.content
+
+    assistant_message = client.responses.create(
+        model="gpt-4o",
+        instructions=conversation_system_prompt,
+        input=conversation_history,
+    ).output_text
+
     
     # Add assistant response to history
     conversation_history.append({
-        "role": "assistant",
         "content": assistant_message,
-        "chain_of_thoughts": chain_of_thoughts,
         "timestamp": datetime.utcnow()
     })
     
@@ -126,7 +138,6 @@ communication: not discussed
     return jsonify({
         "role": "assistant",
         "content": assistant_message,
-        "chain_of_thoughts": chain_of_thoughts,
         "user_id": user_id,
         "conversation_length": len(conversation_history)
     })
@@ -148,7 +159,7 @@ def get_last_message(alexa_user_id):
     if not user or not user.get("conversation_history"):
         print(f"Path: User doesn't exist or has no conversation history")
         # Create initial greeting message
-        greeting_msg = "Hello, thanks for checking in. How are you managing your caregiving and taking care of yourself?"
+        greeting_msg = "Hello, thanks for checking in. How are you?"
         
         # Initialize new user with welcome message
         if not user:
@@ -197,7 +208,7 @@ def get_last_message(alexa_user_id):
     if not assistant_messages:
         print(f"Path: User exists but has no assistant messages")
         # Shouldn't happen normally, but handle just in case
-        greeting_msg = "Hello, thanks for checking in. How are you managing your caregiving and taking care of yourself?"
+        greeting_msg = "Hello, thanks for checking in. How are you?"
         new_message = {
             "role": "assistant",
             "content": greeting_msg,
@@ -226,7 +237,7 @@ def get_last_message(alexa_user_id):
     if "CONVERSATION_END" in last_assistant_message.get("content", ""):
         print(f"Path: Last message was CONVERSATION_END")
         # Start a new conversation
-        greeting_msg = "Hello, thanks for checking in. How are you managing your caregiving and taking care of yourself?"
+        greeting_msg = "Hello, thanks for checking in. How are you?"
         new_message = {
             "role": "assistant",
             "content": greeting_msg,
