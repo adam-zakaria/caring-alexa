@@ -15,27 +15,8 @@
           "samples": []
         },
         {
-          "slots": [
-            {
-              "name": "text",
-              "type": "text"
-            }
-          ],
-          "name": "ConversationIntent",
-          "samples": [
-            "{text}"
-          ]
-        },
-        {
           "name": "AMAZON.NavigateHomeIntent",
           "samples": []
-        },
-        {
-          "slots": [],
-          "name": "AlexaIDIntent",
-          "samples": [
-            "Please note my alexa id"
-          ]
         },
         {
           "name": "MorningProactiveReminderIntent",
@@ -48,60 +29,25 @@
           "samples": [
             "afternoon check in"
           ]
-        }
-      ],
-      "types": [
+        },
         {
-          "values": [
+          "slots": [
             {
-              "name": {
-                "value": "I\u0027m feeling good"
-              }
-            },
-            {
-              "name": {
-                "value": "1231283"
-              }
-            },
-            {
-              "name": {
-                "value": "one"
-              }
-            },
-            {
-              "name": {
-                "value": "I\u0027m feeling some pain"
-              }
-            },
-            {
-              "name": {
-                "value": "great"
-              }
-            },
-            {
-              "name": {
-                "value": "no"
-              }
-            },
-            {
-              "name": {
-                "value": "yes"
-              }
-            },
-            {
-              "name": {
-                "value": "hello"
-              }
-            },
-            {
-              "name": {
-                "value": "haha"
-              }
+              "name": "text",
+              "type": "AMAZON.SearchQuery"
             }
           ],
-          "name": "text"
+          "name": "ConversationIntent",
+          "samples": [
+            "{text}",
+            "what is my schedule",
+            "help me",
+            "tell me about",
+            "please note my alexa id"
+          ]
         }
       ],
+      "types": [],
       "invocationName": "recover demo bot"
     }
   }

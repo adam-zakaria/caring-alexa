@@ -385,6 +385,10 @@ class ConversationHandler(AbstractRequestHandler):
         # type: (HandlerInput) -> bool
         # This handler will catch ALL intent requests and launch requests
         # It's crucial this handler is registered LAST
+        intent_name = None
+        if ask_utils.is_request_type("IntentRequest")(handler_input):
+            intent_name = handler_input.request_envelope.request.intent.name
+            logger.info(f"ConversationHandler - Checking if can handle intent: {intent_name}")
         return True
 
     def handle(self, handler_input):
@@ -392,13 +396,16 @@ class ConversationHandler(AbstractRequestHandler):
         if ask_utils.is_request_type("LaunchRequest")(handler_input):
             message = "hello"
         else:
+            intent_name = handler_input.request_envelope.request.intent.name
+            logger.info(f"ConversationHandler - Handling intent: {intent_name}")
+            
             # Try to get the text slot if it exists
             message = ask_utils.get_slot_value(handler_input, "text") or ""
             
             # If no text slot or it's empty, fallback to the intent name
             if not message:
                 message = (
-                    ask_utils.get_intent_name(handler_input)
+                    intent_name
                     .replace("Intent", "")
                     .replace("AMAZON.", "")
                 )
