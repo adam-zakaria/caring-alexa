@@ -34,16 +34,12 @@
           "slots": [
             {
               "name": "text",
-              "type": "AMAZON.SearchQuery"
+              "type": "text"
             }
           ],
           "name": "ConversationIntent",
           "samples": [
-            "{text}",
-            "what is my schedule",
-            "help me",
-            "tell me about",
-            "please note my alexa id"
+            "{text}"
           ]
         }
       ],
