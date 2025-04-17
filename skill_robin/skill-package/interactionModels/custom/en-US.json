@@ -40,17 +40,13 @@
         {
           "name": "MorningProactiveReminderIntent",
           "samples": [
-            "morning check in",
-            "morning reminder",
-            "morning feeling check"
+            "morning check in"
           ]
         },
         {
           "name": "AfternoonProactiveReminderIntent",
           "samples": [
-            "afternoon check in",
-            "afternoon reminder",
-            "afternoon feeling check"
+            "afternoon check in"
           ]
         }
       ],

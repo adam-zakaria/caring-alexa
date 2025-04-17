@@ -215,6 +215,7 @@ class MorningProactiveReminderHandler(AbstractRequestHandler):
 
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
+        # Only handle the exact "morning check in" intent
         return ask_utils.is_intent_name("MorningProactiveReminderIntent")(handler_input)
 
     def handle(self, handler_input):
@@ -295,6 +296,7 @@ class AfternoonProactiveReminderHandler(AbstractRequestHandler):
 
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
+        # Only handle the exact "afternoon check in" intent
         return ask_utils.is_intent_name("AfternoonProactiveReminderIntent")(handler_input)
 
     def handle(self, handler_input):
@@ -377,31 +379,32 @@ class AfternoonProactiveReminderHandler(AbstractRequestHandler):
 
 
 class ConversationHandler(AbstractRequestHandler):
-    """Handler for all conversation intents."""
+    """Handler for all conversation intents as a catch-all."""
 
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
-        return ask_utils.is_request_type("LaunchRequest")(
-            handler_input
-        ) or ask_utils.is_request_type("IntentRequest")(
-            handler_input
-        )  # catch all intent
+        # This handler will catch ALL intent requests and launch requests
+        # It's crucial this handler is registered LAST
+        return True
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
         if ask_utils.is_request_type("LaunchRequest")(handler_input):
             message = "hello"
         else:
-            if ask_utils.get_slot_value(handler_input, "text"):
-                message = ask_utils.get_slot_value(handler_input, "text")
-            else:
+            # Try to get the text slot if it exists
+            message = ask_utils.get_slot_value(handler_input, "text") or ""
+            
+            # If no text slot or it's empty, fallback to the intent name
+            if not message:
                 message = (
                     ask_utils.get_intent_name(handler_input)
                     .replace("Intent", "")
                     .replace("AMAZON.", "")
                 )
-        logger.info("ConversationHandler")
-        logger.info("message: " + message)
+        
+        logger.info("ConversationHandler - Catch All")
+        logger.info(f"message: {message}")
         
         user_id = get_customer_email(handler_input)
         logger.info(user_id)
@@ -489,12 +492,15 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
 
 sb = StandardSkillBuilder()
 
+# Order matters! Put these handlers first so they'll check first
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
 sb.add_request_handler(MorningProactiveReminderHandler())
 sb.add_request_handler(AfternoonProactiveReminderHandler())
-sb.add_request_handler(ConversationHandler())
 sb.add_request_handler(SessionEndedRequestHandler())
+
+# ConversationHandler MUST be last as it will catch everything else
+sb.add_request_handler(ConversationHandler())
 
 sb.add_exception_handler(CatchAllExceptionHandler())
 
