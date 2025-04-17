@@ -97,6 +97,7 @@ def conversationEnded(alexa_user_id: str):
 
 
 def conversation(alexa_user_id: str, content: str) -> requests.Response:
+    # content is the user message
     try:
         resp = requests.post(
             config.apiHost + f"/alexa_user/{alexa_user_id}/conversation",

@@ -148,7 +148,7 @@ def get_last_message(alexa_user_id):
     if not user or not user.get("conversation_history"):
         print(f"Path: User doesn't exist or has no conversation history")
         # Create initial greeting message
-        greeting_msg = "Hello, thanks for checking in. How are you managing your caregiving and taking care of yourself?"
+        greeting_msg = "Hello, thanks for checking in. How are you?"
         
         # Initialize new user with welcome message
         if not user:
@@ -197,7 +197,7 @@ def get_last_message(alexa_user_id):
     if not assistant_messages:
         print(f"Path: User exists but has no assistant messages")
         # Shouldn't happen normally, but handle just in case
-        greeting_msg = "Hello, thanks for checking in. How are you managing your caregiving and taking care of yourself?"
+        greeting_msg = "Hello, thanks for checking in. How are you?"
         new_message = {
             "role": "assistant",
             "content": greeting_msg,
@@ -226,7 +226,7 @@ def get_last_message(alexa_user_id):
     if "CONVERSATION_END" in last_assistant_message.get("content", ""):
         print(f"Path: Last message was CONVERSATION_END")
         # Start a new conversation
-        greeting_msg = "Hello, thanks for checking in. How are you managing your caregiving and taking care of yourself?"
+        greeting_msg = "Hello, thanks for checking in. How are you?"
         new_message = {
             "role": "assistant",
             "content": greeting_msg,
