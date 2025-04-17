@@ -27,22 +27,6 @@
           ]
         },
         {
-          "slots": [
-            {
-              "multipleValues": {
-                "enabled": true
-              },
-              "name": "number",
-              "type": "AMAZON.NUMBER"
-            }
-          ],
-          "name": "RecordIDIntent",
-          "samples": [
-            "record my participant number as {number}",
-            "record me as participant {number}"
-          ]
-        },
-        {
           "name": "AMAZON.NavigateHomeIntent",
           "samples": []
         },
