@@ -59,13 +59,14 @@ def conversation(alexa_user_id):
     """
     An endpoint that maintains conversation history in MongoDB.
     """
-    message = request.get_json()["content"]
+    # Get user message from request
+    user_message = request.get_json()["content"]
     user_id = alexa_user_id
     
-    # Initialize MongoDB collection for conversations
+    # Get a reference to the mongo conversations collection
     conversations_collection = db['conversations']
     
-    # Check if user exists, create if not
+    # Check if user exists in mongo, create if not
     user = conversations_collection.find_one({"user_id": user_id})
     if not user:
         conversations_collection.insert_one({
@@ -75,45 +76,36 @@ def conversation(alexa_user_id):
         user = conversations_collection.find_one({"user_id": user_id})
     
     # Get conversation history
+    """
+    conversation_history = [
+        {
+            "role": "user",
+            "content": "Hello, how are you?",
+            "timestamp": "2023-05-01T12:00:00Z"
+        },
+        ...]
+    """
     conversation_history = user.get("conversation_history", [])
     
-    # Add the new user message to history
+    # Add the user message to history
     conversation_history.append({
         "role": "user",
-        "content": message,
-        "timestamp": datetime.utcnow()
+        "content": user_message,
+        "timestamp": datetime.utcnow().isoformat()
     })
     
-    # Format for OpenAI API
-    conversation_logs = [
-        {"role": log["role"], "content": log["content"]}
-        for log in conversation_history
-    ]
-    
-    # Call the OpenAI function with full history
-    assistant_message = gpt_inference(
-        [{"role": "system", "content": conversation_system_prompt}, *conversation_logs],
-    )
-    
-    # Process the response
-    try:
-        chain_of_thoughts, assistant_message = assistant_message.split(
-            "==============", 1
-        )
-        assistant_message = assistant_message.strip()
-    except ValueError:
-        chain_of_thoughts = """physical: not discussed
-stress: not discussed
-mood: not discussed
-communication: not discussed
-"""
+    # Get assistant response
+    assistant_message = client.responses.create(
+        model="gpt-4o",
+        instructions=conversation_system_prompt,
+        input=json.dumps(conversation_history), # dump the conversation history into the input
+    ).output_text
     
     # Add assistant response to history
     conversation_history.append({
         "role": "assistant",
         "content": assistant_message,
-        "chain_of_thoughts": chain_of_thoughts,
-        "timestamp": datetime.utcnow()
+        "timestamp": datetime.utcnow().isoformat()
     })
     
     # Update MongoDB with new conversation history
@@ -121,12 +113,17 @@ communication: not discussed
         {"user_id": user_id},
         {"$set": {"conversation_history": conversation_history}}
     )
+    # pretty print the conversation history
+    print('--------------------------------')
+    print("Conversation History:")
+    for msg in conversation_history:
+        print(f"{msg['role']}: {msg['content']}")
+    print('--------------------------------')
     
     # Return the assistant's response
     return jsonify({
         "role": "assistant",
         "content": assistant_message,
-        "chain_of_thoughts": chain_of_thoughts,
         "user_id": user_id,
         "conversation_length": len(conversation_history)
     })
@@ -159,7 +156,7 @@ def get_last_message(alexa_user_id):
                     "role": "assistant",
                     "content": greeting_msg,
                     "chain_of_thoughts": "",
-                    "timestamp": datetime.utcnow()
+                    "timestamp": datetime.utcnow().isoformat()
                 }]
             })
         else:
@@ -171,7 +168,7 @@ def get_last_message(alexa_user_id):
                     "role": "assistant",
                     "content": greeting_msg,
                     "chain_of_thoughts": "",
-                    "timestamp": datetime.utcnow()
+                    "timestamp": datetime.utcnow().isoformat()
                 }]}}
             )
         
@@ -202,7 +199,7 @@ def get_last_message(alexa_user_id):
             "role": "assistant",
             "content": greeting_msg,
             "chain_of_thoughts": "",
-            "timestamp": datetime.utcnow()
+            "timestamp": datetime.utcnow().isoformat()
         }
         conversation_history.append(new_message)
         conversations_collection.update_one(
@@ -231,7 +228,7 @@ def get_last_message(alexa_user_id):
             "role": "assistant",
             "content": greeting_msg,
             "chain_of_thoughts": "",
-            "timestamp": datetime.utcnow()
+            "timestamp": datetime.utcnow().isoformat()
         }
         # Clear conversation history and add greeting
         conversations_collection.update_one(
