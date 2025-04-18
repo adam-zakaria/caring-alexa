@@ -7,6 +7,10 @@
           "samples": []
         },
         {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
           "name": "AMAZON.StopIntent",
           "samples": []
         },
@@ -35,7 +39,58 @@
           ]
         }
       ],
-      "types": [],
+      "types": [
+        {
+          "values": [
+            {
+              "name": {
+                "value": "I\u0027m feeling good"
+              }
+            },
+            {
+              "name": {
+                "value": "1231283"
+              }
+            },
+            {
+              "name": {
+                "value": "one"
+              }
+            },
+            {
+              "name": {
+                "value": "I\u0027m feeling some pain"
+              }
+            },
+            {
+              "name": {
+                "value": "great"
+              }
+            },
+            {
+              "name": {
+                "value": "no"
+              }
+            },
+            {
+              "name": {
+                "value": "yes"
+              }
+            },
+            {
+              "name": {
+                "value": "hello"
+              }
+            },
+            {
+              "name": {
+                "value": "haha"
+              }
+            }
+          ],
+          "name": "text"
+        }
+      ],
       "invocationName": "recover demo bot"
     }
   }
