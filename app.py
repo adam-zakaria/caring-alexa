@@ -42,6 +42,24 @@ else:
     Listen carefully and respond naturally as if you're talking to the user over the phone.
     """
 
+# Helper function to load schedule
+def load_schedule():
+    """Load the schedule from the JSON file."""
+    schedule_path = os.path.join(current_dir, "schedule.json")
+    try:
+        if os.path.exists(schedule_path):
+            with open(schedule_path, "r") as f:
+                return json.load(f)
+        else:
+            # Fallback schedule if file doesn't exist
+            print(f"Warning: Schedule file not found at {schedule_path}")
+            return [
+                {"activity": "No scheduled activities found", "date_time": "N/A"}
+            ]
+    except Exception as e:
+        print(f"Error loading schedule: {str(e)}")
+        return [{"activity": "Error loading schedule", "date_time": "N/A"}]
+
 # OpenAI functions
 def gpt_inference(messages, stop=None, model="gpt-4o", **kwargs):
     """Call the OpenAI API with the provided messages."""
@@ -62,6 +80,10 @@ def conversation(alexa_user_id):
     # Get user message from request
     user_message = request.get_json()["content"]
     user_id = alexa_user_id
+
+    # Load schedule from JSON file
+    schedule = load_schedule()
+    schedule_str = '\nschedule:\n' + json.dumps(schedule)
     
     # Get a reference to the mongo conversations collection
     conversations_collection = db['conversations']
@@ -77,6 +99,7 @@ def conversation(alexa_user_id):
     
     # Get conversation history
     """
+    schema:
     conversation_history = [
         {
             "role": "user",
@@ -93,11 +116,18 @@ def conversation(alexa_user_id):
         "content": user_message,
         "timestamp": datetime.utcnow().isoformat()
     })
+
     
+    # Get current date and time
+    # current_date_time = datetime.utcnow()
+    # Set a fixed time for testing (8:00 AM today)
+    current_date_time = datetime.now().replace(hour=8, minute=0, second=0, microsecond=0)
+    current_date_time_str = f'\ncurrent_date_time: {current_date_time.strftime("%Y-%m-%d %H:%M:%S")}\n'
+
     # Get assistant response
     assistant_message = client.responses.create(
         model="gpt-4o",
-        instructions=conversation_system_prompt,
+        instructions=conversation_system_prompt + current_date_time_str + schedule_str,
         input=json.dumps(conversation_history), # dump the conversation history into the input
     ).output_text
     
@@ -256,6 +286,13 @@ def get_last_message(alexa_user_id):
 def health_check():
     """Simple health check endpoint."""
     return jsonify({"status": "ok"})
+
+@app.route("/schedule", methods=["GET"])
+def get_schedule():
+    """Endpoint to retrieve the schedule."""
+    # Load schedule from JSON file using the helper function
+    schedule = load_schedule()
+    return jsonify(schedule)
 
 if __name__ == "__main__":
     # Add better error handling

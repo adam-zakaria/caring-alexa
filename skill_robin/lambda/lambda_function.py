@@ -20,9 +20,27 @@ from ask_sdk_core.exceptions import SerializationException
 from ask_sdk_core.handler_input import HandlerInput
 from ask_sdk.standard import StandardSkillBuilder
 import json
+import os
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+def load_schedule():
+    """Fetch the schedule from the API endpoint."""
+    try:
+        resp = requests.get(
+            config.apiHost + "/schedule",
+            timeout=10
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        else:
+            logger.error(f"Failed to fetch schedule: Status code {resp.status_code}")
+            return [{"activity": "Error loading schedule", "date_time": "N/A"}]
+    except Exception as e:
+        logger.error(f"Error fetching schedule: {str(e)}")
+        return [{"activity": "Error loading schedule", "date_time": "N/A"}]
 
 
 def to_speech(handler_input, response):
@@ -231,21 +249,8 @@ class MorningProactiveReminderHandler(AbstractRequestHandler):
         weather = "Sunny"  # TODO: Replace with actual openweathermap api call
         username = "John"  # TODO: Replace with actual username from database
 
-        # Mock schedule
-        schedule = [
-            {
-                "activity": "Take medication",
-                "date_time": "8:00 AM"
-            },
-            {
-                "activity": "Cooking class",
-                "date_time": "10:00 AM"
-            },
-            {
-                "activity": "Yoga class",
-                "date_time": "2:00 PM"
-            }
-        ]
+        # Fetch schedule from API
+        schedule = load_schedule()
 
         # Create JSON data structure for the LLM
         morning_data = {
@@ -309,23 +314,26 @@ class AfternoonProactiveReminderHandler(AbstractRequestHandler):
         current_time = datetime.now().strftime("%I:%M %p")
         username = "John"  # TODO: Replace with actual username from database
         
-        # Mock schedule - remaining events for today
-        schedule = [
-            {
-                "activity": "Afternoon tea",
-                "date_time": "3:30 PM"
-            },
-            {
-                "activity": "Call with family",
-                "date_time": "5:00 PM"
-            },
-            {
-                "activity": "Evening medication",
-                "date_time": "8:00 PM"
-            }
-        ]
+        # Fetch schedule from API
+        schedule = load_schedule()
         
-        # Mock notifications
+        # Filter schedule for afternoon - only show events after current time
+        try:
+            current_time_obj = datetime.strptime(current_time, "%I:%M %p")
+            afternoon_schedule = []
+            for event in schedule:
+                try:
+                    event_time = datetime.strptime(event["date_time"], "%I:%M %p")
+                    if event_time > current_time_obj:
+                        afternoon_schedule.append(event)
+                except ValueError:
+                    # If time parsing fails, include the event anyway
+                    afternoon_schedule.append(event)
+        except ValueError:
+            # If parsing current time fails, use the full schedule
+            afternoon_schedule = schedule
+        
+        # Notifications - can still be defined here as they may be specific to the afternoon check-in
         notifications = [
             {
                 "type": "reminder",
@@ -344,7 +352,7 @@ class AfternoonProactiveReminderHandler(AbstractRequestHandler):
                 "username": username,
                 "time": current_time
             },
-            "schedule": schedule,
+            "schedule": afternoon_schedule,
             "notifications": notifications
         }
         
@@ -499,7 +507,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
 
 sb = StandardSkillBuilder()
 
-# Order matters! Put these handlers first so they'll check first
+# All specific intents MUST come before the ConversationHandler
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
 sb.add_request_handler(MorningProactiveReminderHandler())

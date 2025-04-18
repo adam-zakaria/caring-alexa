@@ -1,0 +1,26 @@
+[
+  {
+    "activity": "Take medication",
+    "date_time": "8:00 AM"
+  },
+  {
+    "activity": "Cooking class",
+    "date_time": "10:00 AM"
+  },
+  {
+    "activity": "Yoga class",
+    "date_time": "2:00 PM"
+  },
+  {
+    "activity": "Afternoon tea",
+    "date_time": "3:30 PM"
+  },
+  {
+    "activity": "Call with family",
+    "date_time": "5:00 PM"
+  },
+  {
+    "activity": "Evening medication",
+    "date_time": "8:00 PM"
+  }
+] 
